@@ -1,0 +1,12 @@
+{
+    "name": "fdsafasdf",
+    "id": "key_1666648272191-0425-0139-0423-0874",
+    "vmId": "vmId_1666648272191-0733-0602-0190-0021",
+    "history": [
+        {
+            "code": "/*\n\tHere goes you code. Press CTRL + S to execute your script.\n\tMake sure that the coud you want to recieve is the last written in your script.\n*/\n\n// Example:\n \nfunction sum(n1, n2) {\n\treturn n1 + n2;\n}\n\n// Here goes what defines the return value of the API\n{a:2, b:3}",
+            "date": "2022-10-24T21:51:13.059Z",
+            "id": "hist_1666648273059-0563-0536-0725-0385"
+        }
+    ]
+}

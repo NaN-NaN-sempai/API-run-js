@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link
+	rel="stylesheet"
+	data-name="vs/editor/editor.main"
+	href="/monaco-editor/editor/editor.main.css"
+/>
+<link rel="icon" type="image/x-icon" href="https://cdn.icon-icons.com/icons2/2107/PNG/64/file_type_js_official_icon_130509.png">
+<title>API Run JS</title>
+<style>
+:root {
+	--bgColor: #191919;
+	--bgColor2: #1e1e1e;
+	--bgColor3: #353535;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	outline: none;
+}
+
+body {
+	background: var(--bgColor);
+	overflow: hidden;
+}
+
+.mainWindow {
+	height: 70vh;
+	display: grid;
+	grid-template-columns: 60vw 20vw 20vw;
+}
+
+.mainWindow.output {
+	height: 30vh;
+	grid-template-columns: 60vw 40vw;
+}
+
+.mainWindow.output.fullOpen {
+	grid-template-columns: 100vw 0vw;
+}
+
+.mainWindow.output .optionsContainer input {
+	color: white;
+	background-color: var(--bgColor);
+	border: 4px solid var(--bgColor2);
+	--openOptionMenuBorderRadious: 2vh;
+	border-radius: var(--openOptionMenuBorderRadious);
+	padding-left: 5px;
+}
+
+.mainWindow.output .optionsContainer button {
+	background-color: var(--bgColor3);
+	color: var(--bgColor);
+	border: 4px solid var(--bgColor);
+	--openOptionMenuBorderRadious: 2vh;
+	border-radius: var(--openOptionMenuBorderRadious);
+	padding: 2px 5px 2px 5px;
+}
+
+.mainWindow.output .optionsContainer button:hover {
+	background-color: var(--bgColo2);
+	color: var(--bgColor3);
+	border: 4px solid var(--bgColor);
+}
+
+.mainWindow.output .optionsContainer button:active {
+	background-color: var(--bgColo2);
+	color: var(--bgColor3);
+	border: 4px solid var(--bgColor3);
+}
+
+.mainWindow .code.json {
+	margin-left: 4px;
+}
+
+.mainWindow.output .code.json {
+	margin: 0;
+	margin-top: 4px;
+}
+
+.mainWindow.output .optionsContainer {
+	margin: 4px;
+}
+
+.openOptionMenu {
+	position: absolute;
+	top: 67.5vh;
+	right: 0;
+	background: var(--bgColor);
+	width: 5vh;
+	height: 5vh;
+	border: 4px solid var(--bgColor2);
+	--openOptionMenuBorderRadious: 2vh;
+	border-radius: var(--openOptionMenuBorderRadious) 0 0  var(--openOptionMenuBorderRadious);
+	cursor: pointer;
+}
+.openOptionMenu .buttonIcon {
+	background: var(--bgColor3);
+	position: absolute;
+	top: 50%;
+	right: 50%;
+	transform: translate(50%, -50%);	
+	width: 40%;
+	height: 40%;
+	clip-path: polygon(0 0, 0 0, 0 0, 0 0, 0 0, 0 100%, 100% 100%, 100% 70%, 0 70%, 0 30%, 100% 30%, 100% 0);
+	transition: clip-path .1s linear;
+}
+.openOptionMenu.open .buttonIcon {
+	clip-path: polygon(0 30%, 30% 0, 50% 20%, 70% 0%, 100% 30%, 80% 50%, 100% 70%, 70% 100%, 50% 80%, 30% 100%, 0 70%, 20% 50%);
+}
+
+.loading {
+	background-color: #191919c8;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 50%;
+	right: 50%;
+	transform: translate(50%, -50%);
+	z-index: 10;
+	display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading .spinningIcon {
+	--loaderBorderSize: 20px;
+	border: var(--loaderBorderSize) solid var(--bgColor);
+	border-radius: 50%;
+	border-top: var(--loaderBorderSize) solid var(--bgColor3);
+	border-bottom: var(--loaderBorderSize) solid var(--bgColor3);
+	width: 120px;
+	height: 120px;
+	-webkit-animation: spin 2s infinite; /* Safari */
+	animation: spin 2s infinite;
+}
+
+.loading.hidden {
+	display: none;
+}
+/* Safari */
+@-webkit-keyframes spin {
+	0% { -webkit-transform: rotate(0deg); }
+	100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+	<div class="loading hidden">
+		<div class="spinningIcon"></div>
+	</div>
+
+	<div class="mainWindow">
+		<div id="editor" class="code"></div>
+		<div id="hist" class="code json"></div>
+		<div id="fullObj" class="code json"></div>
+	</div>
+
+	<div class="mainWindow output fullOpen">
+		<div id="output" class="code json"></div>
+		
+		<div class="optionsContainer">
+			<input id="sectionName" placeholder="Nome da Seção" type="text">
+			<button id="createSectionButton">Criar Seção</button>
+
+			<br><br>	
+
+			<input id="sectionId" placeholder="ID da Seção" type="text">
+			<button id="runCodeButton">Executar Código</button>
+		</div>
+	</div>
+
+	<div class="openOptionMenu">
+		<div class="buttonIcon"></div>
+	</div>
+</body>
+
+
+<script>
+	var require = { paths: { vs: '/monaco-editor/' } };
+</script>
+<script src="/monaco-editor/loader.js"></script>
+<script src="/monaco-editor/editor/editor.main.nls.js"></script>
+<script src="/monaco-editor/editor/editor.main.js"></script>
+
+<script>
+	
+	var editor = monaco.editor.create(document.getElementById('editor'), {
+		value: "/*\n\tHere goes you code. Press CTRL + S to execute your script.\n\tMake sure that the coud you want to recieve is the last written in your script.\n*/\n\n// Example:\n \nfunction sum(n1, n2) {\n\treturn n1 + n2;\n}\n\n// Here goes what defines the return value of the API\nsum(4, 4);",
+		language: 'javascript',
+
+		lineNumbers: 'on',
+		roundedSelection: true,
+		scrollBeyondLastLine: false,
+		readOnly: false,
+		theme: 'vs-dark'
+	});
+	
+	var hist = monaco.editor.create(document.getElementById('hist'), {
+		value: `{\n  "history": "Here the history is displayed."\n}`,
+		language: 'json',
+
+		lineNumbers: 'off',
+		roundedSelection: true,
+		scrollBeyondLastLine: false,
+		readOnly: true,
+		minimap:{enabled:false},
+		theme: 'vs-dark'
+	});
+
+	var fullObj = monaco.editor.create(document.getElementById('fullObj'), {
+		value: `{\n  "section": "Here the full section object is displayed."\n}`,
+		language: 'json',
+
+		lineNumbers: 'off',
+		roundedSelection: true,
+		scrollBeyondLastLine: false,
+		readOnly: true,
+		minimap:{enabled:false},
+		theme: 'vs-dark'
+	});
+
+	var outputEditor = monaco.editor.create(document.getElementById('output'), {
+		value: `{\n  "output": "Here the response from the API is displayed."\n}`,
+		language: 'javascript',
+
+		lineNumbers: 'off',
+		roundedSelection: true,
+		scrollBeyondLastLine: false,
+		readOnly: true,
+		minimap:{enabled:false},
+		theme: 'vs-dark'
+	});
+
+
+	window.onresize = function (){
+		editor.layout();
+		hist.layout();
+		fullObj.layout();
+		outputEditor.layout();
+	};
+
+</script>
+
+<script>
+	var openMenuButton = document.querySelector(".openOptionMenu");
+	var loading = document.querySelector(".loading");
+
+	openMenuButton.addEventListener("click", () => {
+		openMenuButton.classList.toggle("open");
+
+		var output = document.querySelector(".mainWindow.output");
+
+		if(!openMenuButton.classList.contains("open")){
+			output.classList.add("fullOpen");
+		} else {
+			output.classList.remove("fullOpen");
+		}
+		
+		outputEditor.layout();
+	})
+
+	var sctionName = document.querySelector("#sectionName");
+	var sctionId = document.querySelector("#sectionId");
+
+	var createSection = (name) => {
+		loading.classList.remove("hidden");
+
+		var data = {
+			name
+		};
+
+
+		fetch("/createSection", {
+			method: "POST",
+			headers: {'Content-Type': 'application/json'}, 
+			body: JSON.stringify(data)
+		})
+		.then(res=>res.json())
+		.then(res => {
+
+			if(res.error){
+				loading.classList.add("hidden");
+				outputEditor.setValue(JSON.stringify(res.response, null, 4));
+				return alert("An error has appeard:\n"+ res.response);
+			}
+			outputEditor.setValue("Section Created, now run your code.");
+
+			sectionId.value = res.id;
+			
+			loading.classList.add("hidden");
+		});
+
+	}
+
+	var executeCode = (sectionName, sectionId, code) => {
+		loading.classList.remove("hidden");
+
+		var data = {
+			sectionName,
+			sectionId,
+			run: code
+		};
+
+
+		fetch("/run", {
+			method: "POST",
+			headers: {'Content-Type': 'application/json'}, 
+			body: JSON.stringify(data)
+		})
+		.then(res=>res.json())
+		.then(res => {
+
+			if(res.error){
+				loading.classList.add("hidden");
+				outputEditor.setValue(JSON.stringify(decodeURI(res.response), null, 4));
+				return alert("An error has appeard:\n"+ decodeURI(res.response));
+			}
+
+			fetch("/section", {
+				method: "POST",
+				headers: {'Content-Type': 'application/json'}, 
+				body: JSON.stringify(data)
+			})
+			.then(resS => resS.json())
+			.then(resS => {
+				fullObj.setValue(JSON.stringify(resS.data, null, 4));
+			});
+
+			fetch("/history", {
+				method: "POST",
+				headers: {'Content-Type': 'application/json'}, 
+				body: JSON.stringify(data)
+			})
+			.then(resS => resS.json())
+			.then(resS => {
+				hist.setValue(JSON.stringify(resS.data, null, 4));
+			});
+
+			outputEditor.setValue(decodeURI(res.response));
+
+			loading.classList.add("hidden");
+		});
+	}
+
+	document.querySelector("#createSectionButton").addEventListener("click", () => {
+		createSection(sctionName.value);
+	});
+
+	document.querySelector("#runCodeButton").addEventListener("click", () => {
+		executeCode(sctionName.value, sectionId.value, editor.getValue());
+	});
+	
+	addEventListener("keydown", function(e) {
+		if (e.key === 's' && (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)) {
+			e.preventDefault();
+		executeCode(sctionName.value, sectionId.value, editor.getValue());
+		}
+	}, false);
+</script>
+</html>
